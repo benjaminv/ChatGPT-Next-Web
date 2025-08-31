@@ -25,7 +25,7 @@ export const ALIBABA_BASE_URL = "https://dashscope.aliyuncs.com/api/";
 
 export const TENCENT_BASE_URL = "https://hunyuan.tencentcloudapi.com";
 
-export const MOONSHOT_BASE_URL = "https://api.moonshot.cn";
+export const MOONSHOT_BASE_URL = "https://api.moonshot.ai";
 export const IFLYTEK_BASE_URL = "https://spark-api-open.xf-yun.com";
 
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
@@ -35,6 +35,8 @@ export const XAI_BASE_URL = "https://api.x.ai";
 export const CHATGLM_BASE_URL = "https://open.bigmodel.cn";
 
 export const SILICONFLOW_BASE_URL = "https://api.siliconflow.cn";
+
+export const AI302_BASE_URL = "https://api.302.ai";
 
 export const CACHE_URL_PREFIX = "/api/cache";
 export const UPLOAD_URL = `${CACHE_URL_PREFIX}/upload`;
@@ -72,6 +74,7 @@ export enum ApiPath {
   ChatGLM = "/api/chatglm",
   DeepSeek = "/api/deepseek",
   SiliconFlow = "/api/siliconflow",
+  "302.AI" = "/api/302ai",
 }
 
 export enum SlotID {
@@ -130,6 +133,7 @@ export enum ServiceProvider {
   ChatGLM = "ChatGLM",
   DeepSeek = "DeepSeek",
   SiliconFlow = "SiliconFlow",
+  "302.AI" = "302.AI",
 }
 
 // Google API safety settings, see https://ai.google.dev/gemini-api/docs/safety-settings
@@ -156,6 +160,7 @@ export enum ModelProvider {
   ChatGLM = "ChatGLM",
   DeepSeek = "DeepSeek",
   SiliconFlow = "SiliconFlow",
+  "302.AI" = "302.AI",
 }
 
 export const Stability = {
@@ -221,7 +226,12 @@ export const ByteDance = {
 
 export const Alibaba = {
   ExampleEndpoint: ALIBABA_BASE_URL,
-  ChatPath: "v1/services/aigc/text-generation/generation",
+  ChatPath: (modelName: string) => {
+    if (modelName.includes("vl") || modelName.includes("omni")) {
+      return "v1/services/aigc/multimodal-generation/generation";
+    }
+    return `v1/services/aigc/text-generation/generation`;
+  },
 };
 
 export const Tencent = {
@@ -259,6 +269,13 @@ export const SiliconFlow = {
   ExampleEndpoint: SILICONFLOW_BASE_URL,
   ChatPath: "v1/chat/completions",
   ListModelPath: "v1/models?&sub_type=chat",
+};
+
+export const AI302 = {
+  ExampleEndpoint: AI302_BASE_URL,
+  ChatPath: "v1/chat/completions",
+  EmbeddingsPath: "jina/v1/embeddings",
+  ListModelPath: "v1/models?llm=1",
 };
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
@@ -412,6 +429,14 @@ export const KnowledgeCutOffDate: Record<string, string> = {
   "gpt-4-turbo": "2023-12",
   "gpt-4-turbo-2024-04-09": "2023-12",
   "gpt-4-turbo-preview": "2023-12",
+  "gpt-4.1": "2024-06",
+  "gpt-4.1-2025-04-14": "2024-06",
+  "gpt-4.1-mini": "2024-06",
+  "gpt-4.1-mini-2025-04-14": "2024-06",
+  "gpt-4.1-nano": "2024-06",
+  "gpt-4.1-nano-2025-04-14": "2024-06",
+  "gpt-4.5-preview": "2023-10",
+  "gpt-4.5-preview-2025-02-27": "2023-10",
   "gpt-4o": "2023-10",
   "gpt-4o-2024-05-13": "2023-10",
   "gpt-4o-2024-08-06": "2023-10",
@@ -453,17 +478,22 @@ export const DEFAULT_TTS_VOICES = [
 export const VISION_MODEL_REGEXES = [
   /vision/,
   /gpt-4o/,
-  /claude-3/,
+  /gpt-4\.1/,
+  /claude.*[34]/,
   /gemini-1\.5/,
   /gemini-exp/,
-  /gemini-2\.0/,
+  /gemini-2\.[05]/,
   /learnlm/,
   /qwen-vl/,
   /qwen2-vl/,
-  /gpt-4-turbo(?!.*preview)/, // Matches "gpt-4-turbo" but not "gpt-4-turbo-preview"
-  /^dall-e-3$/, // Matches exactly "dall-e-3"
+  /gpt-4-turbo(?!.*preview)/,
+  /^dall-e-3$/,
   /glm-4v/,
   /vl/i,
+  /o3/,
+  /o4-mini/,
+  /grok-4/i,
+  /gpt-5/
 ];
 
 export const EXCLUDE_VISION_MODEL_REGEXES = [/claude-3-5-haiku-20241022/];
@@ -480,6 +510,19 @@ const openaiModels = [
   "gpt-4-32k-0613",
   "gpt-4-turbo",
   "gpt-4-turbo-preview",
+  "gpt-4.1",
+  "gpt-4.1-2025-04-14",
+  "gpt-4.1-mini",
+  "gpt-4.1-mini-2025-04-14",
+  "gpt-4.1-nano",
+  "gpt-4.1-nano-2025-04-14",
+  "gpt-4.5-preview",
+  "gpt-4.5-preview-2025-02-27",
+  "gpt-5-chat",
+  "gpt-5-mini",
+  "gpt-5-nano",
+  "gpt-5",
+  "gpt-5-chat-2025-01-01-preview",
   "gpt-4o",
   "gpt-4o-2024-05-13",
   "gpt-4o-2024-08-06",
@@ -494,23 +537,20 @@ const openaiModels = [
   "o1-mini",
   "o1-preview",
   "o3-mini",
+  "o3",
+  "o4-mini",
 ];
 
 const googleModels = [
-  "gemini-1.0-pro", // Deprecated on 2/15/2025
   "gemini-1.5-pro-latest",
   "gemini-1.5-pro",
   "gemini-1.5-pro-002",
-  "gemini-1.5-pro-exp-0827",
   "gemini-1.5-flash-latest",
   "gemini-1.5-flash-8b-latest",
   "gemini-1.5-flash",
   "gemini-1.5-flash-8b",
   "gemini-1.5-flash-002",
-  "gemini-1.5-flash-exp-0827",
   "learnlm-1.5-pro-experimental",
-  "gemini-exp-1114",
-  "gemini-exp-1121",
   "gemini-exp-1206",
   "gemini-2.0-flash",
   "gemini-2.0-flash-exp",
@@ -520,6 +560,8 @@ const googleModels = [
   "gemini-2.0-flash-thinking-exp-01-21",
   "gemini-2.0-pro-exp",
   "gemini-2.0-pro-exp-02-05",
+  "gemini-2.5-pro-preview-06-05",
+  "gemini-2.5-pro"
 ];
 
 const anthropicModels = [
@@ -537,6 +579,8 @@ const anthropicModels = [
   "claude-3-5-sonnet-latest",
   "claude-3-7-sonnet-20250219",
   "claude-3-7-sonnet-latest",
+  "claude-sonnet-4-20250514",
+  "claude-opus-4-20250514",
 ];
 
 const baiduModels = [
@@ -570,6 +614,9 @@ const alibabaModes = [
   "qwen-max-0403",
   "qwen-max-0107",
   "qwen-max-longcontext",
+  "qwen-omni-turbo",
+  "qwen-vl-plus",
+  "qwen-vl-max",
 ];
 
 const tencentModels = [
@@ -582,7 +629,18 @@ const tencentModels = [
   "hunyuan-vision",
 ];
 
-const moonshotModes = ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"];
+const moonshotModels = [
+  "moonshot-v1-auto",
+  "moonshot-v1-8k",
+  "moonshot-v1-32k",
+  "moonshot-v1-128k",
+  "moonshot-v1-8k-vision-preview",
+  "moonshot-v1-32k-vision-preview",
+  "moonshot-v1-128k-vision-preview",
+  "kimi-thinking-preview",
+  "kimi-k2-0711-preview",
+  "kimi-latest",
+];
 
 const iflytekModels = [
   "general",
@@ -603,6 +661,18 @@ const xAIModes = [
   "grok-2-vision-1212",
   "grok-2-vision",
   "grok-2-vision-latest",
+  "grok-3-mini-fast-beta",
+  "grok-3-mini-fast",
+  "grok-3-mini-fast-latest",
+  "grok-3-mini-beta",
+  "grok-3-mini",
+  "grok-3-mini-latest",
+  "grok-3-fast-beta",
+  "grok-3-fast",
+  "grok-3-fast-latest",
+  "grok-3-beta",
+  "grok-3",
+  "grok-3-latest",
 ];
 
 const chatglmModels = [
@@ -640,6 +710,31 @@ const siliconflowModels = [
   "THUDM/glm-4-9b-chat",
   "Pro/deepseek-ai/DeepSeek-R1",
   "Pro/deepseek-ai/DeepSeek-V3",
+];
+
+const ai302Models = [
+  "deepseek-chat",
+  "gpt-4o",
+  "chatgpt-4o-latest",
+  "llama3.3-70b",
+  "deepseek-reasoner",
+  "gemini-2.0-flash",
+  "claude-3-7-sonnet-20250219",
+  "claude-3-7-sonnet-latest",
+  "grok-3-beta",
+  "grok-3-mini-beta",
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "o3",
+  "o4-mini",
+  "qwen3-235b-a22b",
+  "qwen3-32b",
+  "gemini-2.5-pro-preview-05-06",
+  "llama-4-maverick",
+  "gemini-2.5-flash",
+  "claude-sonnet-4-20250514",
+  "claude-opus-4-20250514",
+  "gemini-2.5-pro",
 ];
 
 let seq = 1000; // 内置的模型序号生成器从1000开始
@@ -732,7 +827,7 @@ export const DEFAULT_MODELS = [
       sorted: 8,
     },
   })),
-  ...moonshotModes.map((name) => ({
+  ...moonshotModels.map((name) => ({
     name,
     available: true,
     sorted: seq++,
@@ -796,6 +891,17 @@ export const DEFAULT_MODELS = [
       providerName: "SiliconFlow",
       providerType: "siliconflow",
       sorted: 14,
+    },
+  })),
+  ...ai302Models.map((name) => ({
+    name,
+    available: true,
+    sorted: seq++,
+    provider: {
+      id: "ai302",
+      providerName: "302.AI",
+      providerType: "ai302",
+      sorted: 15,
     },
   })),
 ] as const;
